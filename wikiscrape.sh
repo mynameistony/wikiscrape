@@ -9,7 +9,7 @@
 
 #Create local in users home folder
 #Initialize empty files
-SCRAPE_DIR="$HOME/wiki/"
+SCRAPE_DIR="$HOME/wikiscrape/"
 mkdir -p $SCRAPE_DIR/wiki
 touch $SCRAPE_DIR/archived
 touch $SCRAPE_DIR/unarchived
