@@ -30,17 +30,20 @@ function getLinks(){
 		#Check if the article we're trying to get has already been archived...
 		exists=$(cat archived | grep $1 | wc -l)
 
-		#If it has not been archived...
+		#If it has not been archived...or if there are no sexists :P
 		if [ $exists == 0 ]
 			then
 
+			echo "[$0]> Retrieving: $1" >> /dev/stderr
 			ART_DIR=$SCRAPE_DIR/wiki/$1
 			mkdir -p $ART_DIR
 			touch $ART_DIR/index.html
 			touch $ART_DIR/links
 
 			thisPage=$(curl -s -A Mozilla  http://en.wikipedia.org/wiki/$1 | hxselect p)
-			newLinks=$(echo $thisPage | grep " <a href=\"[-A-Za-z0-9 _/]*\" " -o | grep "/wiki/.*" -o | sed s/"\" $"//g | sed s/"^\/wiki\/"//g)	
+			newLinks=$(echo $thisPage | grep " <a href=\"[-A-Za-z0-9 _/]*\" " -o | grep "/wiki/[-A-Za-z0-9_]*" -o | sed s/"^\/wiki\/"//g)
+			
+			echo "[$0]> [$1]> Found $numLinks links" >> /dev/stderr
 
 			echo "Retrieved: $(date)" > $ART_DIR/index.html
 			echo "<form action=/report.php method=post>" >> $ART_DIR/index.html
@@ -48,8 +51,22 @@ function getLinks(){
 			echo "</form>" >> $ART_DIR/index.html
 			echo $thisPage >> $ART_DIR/index.html
 
-			echo $newLinks > $ART_DIR/links
-			echo $newLinks | sed s/$1//g >> unarchived
+			for link in $(echo $newLinks)
+			do
+				if [ "$link" != "$1" ]
+					then
+					echo "Adding $link to unarchived file" >> /dev/stderr
+					echo "$link" >> unarchived
+
+					echo "Adding $link to $1's link file" >> /dev/stderr
+					echo "$link" >> $ART_DIR/links
+				else
+					echo "$link does not need to be archived" >> /dev/stderr
+				fi
+			done
+
+			numLinks="$(cat $ART_DIR/links | wc -l)"
+			echo "[$0]> [$1]> Found $numLinks links"
 
 			#Mark this article as archived
 			echo $1 >> archived
@@ -57,7 +74,7 @@ function getLinks(){
 		#otherwise...
 		else
 			#Don't do anything
-			echo "$1 exists, and was not archived" >> /dev/stderr
+			echo "[$0] $1 exists, and was not archived" >> /dev/stderr
 		fi
 	fi
 }
@@ -65,21 +82,31 @@ function getLinks(){
 #Archive articles from the unarchived file
 function pullUnarchived(){
 
-	#For each link in the unarchived file
+	#For each link in the unrchived file
 	links=$(cat unarchived)
 	for link in $(echo $links)
 	do
 		#Archive them
 		getLinks $link
 	done
+	
+	cat unarchived | sort | uniq > unarchived.tmp
+	cat unarchived.tmp > unarchived
 
-	echo "" > unarchived
+	echo "$(cat unarchived | wc -l) new links found"
 }
 
 #Simple flow control
 if [ "$1" == "-p" ]
 	then
+		pullUnarchived
+elif [ "$1" == "-a" ]
+ 	then
+ 	echo "Starting automatic pull"
+	getLinks "Computer_Science"
 	pullUnarchived
+
 else
+	#statements
 	getLinks $1
 fi
