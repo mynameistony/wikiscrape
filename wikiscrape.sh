@@ -1,11 +1,17 @@
 #!/bin/bash
 
+############################
+# Wikipedia Scraper/Mirror #
+############################
+
 #Initialize by running:
-# wikiscrape [SOME_WIKIPEDIA_ARTICLE]
+# wikiscrape -i
+#Or
+# wikiscrape [NAME_OF_ARTICLE]
 
 #Then run: 
 # wikiscrape -p 
-#to infinitely* pull wikipedia articles
+#to pull wikipedia articles from the unarchived links that get collect
 
 #Create local in users home folder
 #Initialize empty files
@@ -90,23 +96,40 @@ function pullUnarchived(){
 		getLinks $link
 	done
 	
+	echo "Cleaning up"
 	cat unarchived | sort | uniq > unarchived.tmp
 	cat unarchived.tmp > unarchived
 
-	echo "$(cat unarchived | wc -l) new links found"
+	cat archived | sort | uniq > archived.tmp
+	cat archived.tmp > archived	
+	echo "$(wc -l unarchived) new links found"
+	echo "$(wc -l archived) archived"
 }
 
 #Simple flow control
 if [ "$1" == "-p" ]
 	then
+		echo "Pulling unarchived"
 		pullUnarchived
-elif [ "$1" == "-a" ]
+elif [ "$1" == "-i" ]
  	then
- 	echo "Starting automatic pull"
-	getLinks "Computer_Science"
+ 	echo "Starting automatic pull with \"Seed\""
+	getLinks "Seed"
 	pullUnarchived
 
+elif [ "$1" == "-s" ]
+	then
+	echo "Seeding from $2"
+	getLinks "$2"
+	pullUnarchived
 else
-	#statements
-	getLinks $1
+	echo "Invalid usage!"
+	echo "Usage: $0 [OPTIONS] [SEED]"
+	echo -e "Examples:\n"
+	echo "Initialize with default seed"
+	echo -e "\t$0 -i\n"
+	echo "Initialize with [SEED]"
+	echo -e "\t$0 -s [SEED]\n"
+	echo "Begin archiving articles"
+	echo -e "\t$0 -p\n"
 fi
