@@ -6,7 +6,7 @@
 <?php
 
 	if(isset($_POST['search'])){
-		$query = $_POST['query'];
+		$query = escapeshellarg($_POST['query']);
 
 		echo shell_exec("./search.sh $query");
 	}
